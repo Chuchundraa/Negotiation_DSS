@@ -1,0 +1,204 @@
+<!-- =============================================================================
+     Negotiation DSS — index.html
+     -----------------------------------------------------------------------------
+     Головна HTML-сторінка клієнтської частини. Вона підключає CSS, Chart.js та
+     JavaScript-модулі, а також містить основні блоки UI: sidebar, конструктор
+     критеріїв, матрицю виграшів, результати аналізу, історію й авторизацію.
+     ============================================================================= -->
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>СППР Переговори</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Sidebar: навігація, шаблони, історія, авторизація та shared sessions. -->
+    <div class="sidebar">
+        <h2>Переговори</h2>
+        <div class="auth-box" id="authBox">
+            <span id="userGreeting">Гість</span>
+            <button onclick="toggleAuthForm()" class="btn-sm">Увійти</button>
+        </div>
+        <hr>
+        <h3>Шаблони бізнес-сценаріїв</h3>
+        <button onclick="loadExample('hr')">HR (Кадри)</button>
+        <button onclick="loadExample('procurement')">Закупівлі</button>
+        <button onclick="loadExample('business')">Бізнес-угода</button>
+        <hr>
+        <h3>Збережені сценарії</h3>
+        <ul id="savedScenariosList" class="saved-list"><li class="empty-msg">База даних порожня</li></ul>
+
+        <hr>
+        <h3>Історія аналізів</h3>
+        <ul id="analysisHistoryList" class="saved-list"><li class="empty-msg">Увійдіть, щоб бачити історію</li></ul>
+    </div>
+
+    <!-- Main content: основний робочий простір користувача. -->
+    <div class="main-content">
+        <h1>Інтелектуальна система підтримки прийняття рішень (СППР)</h1>
+        <p class="subtitle">Конструктор сценарію оптимізації переговорів за рівновагою Неша</p>
+        <div class="workspace">
+            <!-- Editor section: створення критеріїв, стратегій і матриць виграшів. -->
+            <div class="editor-section">
+                <div class="card">
+                    <div class="card-header"><h3>1. Конструктор критеріїв переговорів</h3></div>
+                    <div id="criteriaContainer" class="form-container" style="margin-bottom: 15px;"></div>
+                    <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap; background: rgba(255,255,255,0.02); padding: 10px; border-radius: 8px; border: 1px dashed var(--border-color);">
+                        <input type="text" id="newCritName" placeholder="Назва (напр. Заробітна плата)" style="flex: 1; min-width: 200px;">
+                        <select id="newCritType" onchange="toggleOptionsInput()" style="min-width: 200px; padding: 8px; border-radius: 6px; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color);">
+                            <option value="number">🔢 Числове значення</option>
+                            <option value="select">🗂 Список варіантів</option>
+                        </select>
+                        <input type="text" id="newCritOptions" placeholder="Варіанти через кому" style="display: none; flex: 2; min-width: 250px;">
+                        <button type="button" class="btn-primary" onclick="addNewCustomCriterion()" style="padding: 8px 16px;">+ Створити</button>
+                    </div>
+                </div>
+
+
+
+                <div class="card">
+                    <div class="card-header"><h3>2. Режим аналізу</h3></div>
+                    <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:12px;">
+                        <label style="font-weight:600;">Тип моделі:</label>
+                        <select id="analysisMode" onchange="onAnalysisModeChanged()" style="min-width:260px; padding:8px; border-radius:6px; background:var(--bg-main); color:var(--text-main); border:1px solid var(--border-color);">
+                            <option value="criteria">Критерійна СППР</option>
+                            <option value="matrix">Матриця виграшів 2×2 (справжній mixed Nash)</option>
+                        </select>
+                    </div>
+                    <p class="text-muted" style="font-size:0.9rem; margin-bottom:10px;">
+                        Для результатів типу 65% / 35% обери режим матриці. У критерійній моделі справжній Nash часто дає чисту стратегію 100% / 0%.
+                    </p>
+                    <div id="matrixModePanel" style="display:none; background:rgba(255,255,255,0.02); padding:12px; border-radius:8px; border:1px dashed var(--border-color);">
+                        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+                            <button type="button" class="btn-secondary" onclick="fillMatrixExample6535()" style="padding:8px 12px;">Приклад 65% / 35%</button>
+                            <button type="button" class="btn-secondary" onclick="clearMatrixInputs()" style="padding:8px 12px;">Очистити матрицю</button>
+                        </div>
+                        <div style="overflow-x:auto;">
+                            <table style="width:100%; border-collapse:collapse; min-width:520px;">
+                                <thead>
+                                    <tr>
+                                        <th style="padding:6px; color:var(--text-muted); text-align:left;">Комбінація</th>
+                                        <th style="padding:6px; color:var(--accent-primary);">Виграш A</th>
+                                        <th style="padding:6px; color:var(--accent-success);">Виграш B</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td style="padding:6px;">A1 vs B1</td><td><input class="matrix-a" data-row="0" data-col="0" type="number" step="0.01" value="0" oninput="updateJsonPreview()"></td><td><input class="matrix-b" data-row="0" data-col="0" type="number" step="0.01" value="1.86" oninput="updateJsonPreview()"></td></tr>
+                                    <tr><td style="padding:6px;">A1 vs B2</td><td><input class="matrix-a" data-row="0" data-col="1" type="number" step="0.01" value="3.45" oninput="updateJsonPreview()"></td><td><input class="matrix-b" data-row="0" data-col="1" type="number" step="0.01" value="0" oninput="updateJsonPreview()"></td></tr>
+                                    <tr><td style="padding:6px;">A2 vs B1</td><td><input class="matrix-a" data-row="1" data-col="0" type="number" step="0.01" value="1.86" oninput="updateJsonPreview()"></td><td><input class="matrix-b" data-row="1" data-col="0" type="number" step="0.01" value="0" oninput="updateJsonPreview()"></td></tr>
+                                    <tr><td style="padding:6px;">A2 vs B2</td><td><input class="matrix-a" data-row="1" data-col="1" type="number" step="0.01" value="0" oninput="updateJsonPreview()"></td><td><input class="matrix-b" data-row="1" data-col="1" type="number" step="0.01" value="3.45" oninput="updateJsonPreview()"></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" id="aiSimulationCard">
+                    <div class="card-header"><h3>3. AI-симулятор переговорів</h3></div>
+                    <p class="text-muted" style="font-size:0.9rem; margin-bottom:10px;">
+                        Напиши простими словами бажаний сценарій, а система автоматично згенерує критерії, ваги та стратегії.
+                    </p>
+                    <textarea id="aiScenarioText" placeholder="Наприклад: Хочу дешевше але швидку доставку, гарантія бажано довша" style="width:100%; min-height:80px; padding:10px; border-radius:8px; background:var(--bg-main); color:var(--text-main); border:1px solid var(--border-color); resize:vertical;"></textarea>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
+                        <button type="button" class="btn-secondary" onclick="simulateNegotiationFromText()" style="padding:8px 12px;">🤖 Згенерувати сценарій</button>
+                        <button type="button" class="btn-secondary" onclick="fillAiExampleText()" style="padding:8px 12px;">Приклад тексту</button>
+                    </div>
+                </div>
+
+                <div class="card" id="sharedSessionCard">
+                    <div class="card-header"><h3>4. Multiplayer / Shared Session</h3></div>
+                    <p class="text-muted" style="font-size:0.9rem; margin-bottom:10px;">
+                        Створи код сесії, передай його іншій стороні, і кожен зможе редагувати свої ваги/стратегії та шукати компроміс.
+                    </p>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                        <button type="button" class="btn-secondary" onclick="createSharedNegotiationSession()" style="padding:8px 12px;">🔗 Створити код</button>
+                        <input type="text" id="sharedCodeInput" placeholder="Код сесії" style="min-width:150px;">
+                        <button type="button" class="btn-secondary" onclick="loadSharedNegotiationSession()" style="padding:8px 12px;">📥 Завантажити</button>
+                        <button type="button" class="btn-secondary" onclick="saveCurrentSharedNegotiationSession()" style="padding:8px 12px;">💾 Оновити сесію</button>
+                    </div>
+                    <div id="sharedSessionStatus" style="margin-top:10px; font-size:0.9rem; color:var(--text-muted);"></div>
+                </div>
+
+                <div class="card" id="adaptiveWeightsCard">
+                    <div class="card-header"><h3>7. Adaptive Weights</h3></div>
+                    <p class="text-muted" style="font-size:0.9rem; margin-bottom:10px;">
+                        Система аналізує історію користувача і пропонує ваги, які відповідають його попереднім рішенням.
+                    </p>
+                    <button type="button" class="btn-secondary" onclick="applyAdaptiveWeights()" style="padding:8px 12px;">🧩 Застосувати адаптивні ваги</button>
+                    <div id="adaptiveWeightsBox" style="margin-top:10px; font-size:0.9rem; color:var(--text-muted);"></div>
+                </div>
+
+                <div class="card" id="deployCard">
+                    <div class="card-header"><h3>10. Docker / Deploy</h3></div>
+                    <p class="text-muted" style="font-size:0.9rem;">
+                        У проєкті є Dockerfile, docker-compose.yml, render.yaml і PostgreSQL-ready змінні середовища. Для локального запуску достатньо Flask + SQLite.
+                    </p>
+                </div>
+
+                <div class="card" id="partyAWrapper">
+                    <div class="card-header"><h3>2. Сторона А</h3><button type="button" onclick="addStrategyRow('partyA')" class="btn-add">+ Додати стратегію А</button></div>
+                    <div class="party-weights" id="weightsContainerA" style="margin: 10px 0; background: rgba(56, 189, 248, 0.03); padding: 12px; border-radius: 8px; border: 1px solid rgba(56, 189, 248, 0.1);"></div>
+                    <div id="partyAContainer" class="form-container"></div>
+                </div>
+
+                <div class="card" id="partyBWrapper">
+                    <div class="card-header"><h3>3. Сторона Б</h3><button type="button" onclick="addStrategyRow('partyB')" class="btn-add">+ Додати стратегію Б</button></div>
+                    <div class="party-weights" id="weightsContainerB" style="margin: 10px 0; background: rgba(52, 211, 147, 0.03); padding: 12px; border-radius: 8px; border: 1px solid rgba(52, 211, 147, 0.1);"></div>
+                    <div id="partyBContainer" class="form-container"></div>
+                </div>
+
+                <div class="actions-bar">
+                    <button id="btnAnalyze" onclick="triggerAnalysis()" class="btn-primary">Запустити аналіз моделі</button>
+                    <button id="btnSave" onclick="saveToDatabase()" class="btn-secondary" disabled>Зберегти в БД</button>
+                </div>
+            </div>
+
+            <!-- Results section: математичні результати, графіки, пояснення та рекомендації. -->
+            <div class="results-section">
+                <div class="card result-card" id="resultCard" style="display: none;"><h3>📊 Математичний висновок аналізу Неша</h3><div id="resultContent"></div></div>
+                <div class="card charts-card mt-4">
+                    <h3>📊 Оптимальний баланс стратегій</h3>
+                    <div class="charts-container" style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 20px; padding: 20px;">
+                        <div class="chart-box" style="flex: 1; min-width: 250px; max-width: 350px; text-align: center;"><h4>Стратегії: Сторона А</h4><canvas id="chartPartyA"></canvas></div>
+                        <div class="chart-box" style="flex: 1; min-width: 250px; max-width: 350px; text-align: center;"><h4>Стратегії: Сторона Б</h4><canvas id="chartPartyB"></canvas></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><h3>📈 Analytics Dashboard</h3></div>
+                    <div id="analyticsDashboard"><p class="text-muted">Увійди, щоб бачити персональну аналітику.</p></div>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
+                        <button type="button" class="btn-secondary" onclick="loadAnalyticsDashboard()" style="padding:8px 12px;">🔄 Оновити аналітику</button>
+                        <button type="button" class="btn-secondary" onclick="exportCurrentAnalysisToPdf()" style="padding:8px 12px;">📂 Експорт PDF</button>
+                        <button type="button" class="btn-secondary" onclick="fillUiUpgradeDemo()" style="padding:8px 12px;">🎨 UI Wow Mode</button>
+                    </div>
+                </div>
+                <div class="card json-card"><h3>JSON для backend</h3><pre id="jsonPreview"></pre></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="authModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close" onclick="toggleAuthForm()">&times;</span>
+            <h3>Авторизація у системі</h3>
+            <form id="authForm" onsubmit="handleAuthSubmit(event)">
+                <div class="input-group"><label>Логін користувача</label><input type="text" id="usernameInput" required></div>
+                <div class="input-group"><label>Пароль</label><input type="password" id="passwordInput" required></div>
+                <button type="submit" class="btn-primary">Увійти</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Chart.js використовується для кругових діаграм і heatmap-візуалізації. -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/data/criteriaData.js"></script>
+    <script src="js/api/api.js"></script>
+    <script src="js/core/balancing.js"></script>
+    <script src="js/core/payloadBuilder.js"></script>
+    <script src="js/ui/charts.js"></script>
+    <script src="js/ui/ui.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

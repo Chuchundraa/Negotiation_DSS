@@ -1,0 +1,13 @@
+# render.yaml: шаблон конфігурації для деплою на Render.
+# Його можна адаптувати під свій акаунт і репозиторій GitHub.
+services:
+  - type: web
+    name: negotiation-dss
+    env: docker
+    plan: free
+    autoDeploy: true
+    envVars:
+      - key: NEGOTIATION_DSS_SECRET
+        generateValue: true
+      - key: NEGOTIATION_DSS_JWT_SECRET
+        generateValue: true

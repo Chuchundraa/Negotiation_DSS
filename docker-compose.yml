@@ -1,0 +1,30 @@
+# docker-compose: локальний запуск усієї системи однією командою.
+# Підходить для демонстрації проєкту або перевірки перед деплоєм.
+version: "3.9"
+services:
+  negotiation-dss:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      NEGOTIATION_DSS_SECRET: "local_dev_secret"
+      NEGOTIATION_DSS_JWT_SECRET: "local_jwt_secret"
+    volumes:
+      - ./backend/database:/app/backend/database
+
+  # PostgreSQL service for deploy-ready architecture.
+  # Current app still uses SQLite by default for simple local coursework demo.
+  # You can migrate DB_PATH logic to DATABASE_URL later without changing frontend.
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: negotiation_dss
+      POSTGRES_USER: negotiation_user
+      POSTGRES_PASSWORD: negotiation_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
