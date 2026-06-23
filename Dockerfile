@@ -9,4 +9,4 @@ WORKDIR /app/backend
 ENV FLASK_ENV=production
 ENV NEGOTIATION_DSS_SECRET=change_me_in_production
 EXPOSE 5000
-CMD ["python", "app.py"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:app"]

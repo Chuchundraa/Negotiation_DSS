@@ -6,3 +6,4 @@ PyJWT==2.8.0
 reportlab==4.2.2
 nashpy==0.0.41
 psycopg2-binary==2.9.9
+gunicorn
