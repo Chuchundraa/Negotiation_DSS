@@ -10,7 +10,7 @@
 // МОДУЛЬ ДЛЯ РОБОТИ З BACKEND API (Flask + SQLite)
 // ==========================================
 
-const API_BASE = "http://127.0.0.1:5000/api";
+const API_BASE = "/api";
 
 // 1. Відправка моделі на прорахунок рівноваги Неша
 // POST-запит до Flask endpoint /api/analyze.
